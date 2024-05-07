@@ -2,6 +2,7 @@ import asyncio
 from asyncio import TaskGroup
 
 from proboscis_async_events import Messages
+from loguru import logger
 
 
 def test_run_messages():
@@ -13,7 +14,7 @@ def test_run_messages():
         async def subber1(sub):
             async with sub:
                 async for message in sub:
-                    print(f"got message:{message}")
+                    logger.debug(f"got message:{message}")
                     if message == 'end':
                         # ah, if you stop the iterator at this point,
                         # this messages waits for the value to be consumed...
@@ -24,19 +25,21 @@ def test_run_messages():
         async def subber2(sub):
             async with sub:
                 import pampy
-                print(f'waiting for world:sub-{id(sub)}')
+                logger.debug(f'waiting for world:sub-{id(sub)}')
                 ev = await sub.wait('world')
-                print(f'got world:{ev}')
-                print('waiting for end')
+                logger.debug(f'got world:{ev}')
+                logger.debug('waiting for end')
                 ev = await sub.wait('end')
-                print(f'got end:{ev}')
-                print('unsubscribing')
-                print('unsubscribed')
+                logger.debug(f'got end:{ev}')
+                logger.debug('unsubscribing')
+                logger.debug('unsubscribed')
 
         async def subber3():
             async with messages.subscribe() as sub:
                 async for message in sub:
-                    print(f"got message:{message}")
+                    logger.info(f"subber 3 got message:{message}")
+                    await asyncio.sleep(3)
+                    logger.warning(f"waited 3 seconds")
                     #raise RuntimeError('End error')
 
 
@@ -44,15 +47,16 @@ def test_run_messages():
             tg.create_task(subber1(messages.subscribe()))
             tg.create_task(subber2(messages.subscribe()))
             tg.create_task(subber3())
-            print('publishing world')
+            #await asyncio.sleep(0 )
+            logger.debug('publishing world')
             await messages.publish("world")
-            print('publishing end')
+            logger.debug('publishing end')
             await messages.publish('end')
-            print('publishing another event')
+            logger.debug('publishing another event')
             await messages.publish('another event')
-            print('closing messages')
+            logger.debug('closing messages')
             await messages.close()
-            print('publishing messages finished')
+            logger.debug('publishing messages finished')
     asyncio.run(test_pub_sub())
 
 

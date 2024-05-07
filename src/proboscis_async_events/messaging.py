@@ -158,6 +158,8 @@ class Messages:
         return subscriber
 
     async def publish(self, message):
+        # let other tasks run before processing events
+        await asyncio.sleep(0)
         self.msg_queue.put_nowait(('publish', message))
         await self.process_events()
 
